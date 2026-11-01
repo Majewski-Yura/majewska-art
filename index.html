@@ -925,11 +925,26 @@ dialog.scale { border-radius: 14px; }
   function stepScale(dir) {
     var n = S.works.length, j = cur;
     for (var k = 0; k < n; k++) { j = (j + dir + n) % n; if (num(S.works[j].w) && (shapeOf(S.works[j]) === "round" || num(S.works[j].h))) break; }
+    // on the visitor's own wall keep the real-world scale: a wider painting takes proportionally more of the photo
+    if (MODE === "wall" && WALL.src) WALL.size = Math.min(90, Math.max(4, WALL.size * num(S.works[j].w) / (num(S.works[cur].w) || 1)));
     openScale(j);
+  }
+  // arrows beside the painting on the visitor's own wall; they follow it when it is dragged or resized
+  function wallArrows(room) {
+    if (!room || S.works.length < 2) return;
+    $$(".sw", room).forEach(function (b) { b.remove(); });
+    var half = WALL.size / 2;
+    [["prev", "‹", "Предыдущая картина", "calc(" + (WALL.x - half).toFixed(2) + "% - 64px)"], ["next", "›", "Следующая картина", "calc(" + (WALL.x + half).toFixed(2) + "% + 20px)"]].forEach(function (a) {
+      var b = h("button", "sw sw-" + a[0], a[1]); b.type = "button"; b.setAttribute("aria-label", a[2]); b.title = a[2];
+      b.style.left = a[3]; b.style.top = WALL.y + "%";
+      b.onclick = function () { stepScale(a[0] === "next" ? 1 : -1); };
+      room.appendChild(b);
+    });
   }
   document.addEventListener("keydown", function (e) {
     var dlg = document.getElementById("scale");
-    if (!dlg || !dlg.open || MODE !== "room") return;
+    if (!dlg || !dlg.open || !(MODE === "room" || (MODE === "wall" && WALL.src))) return;
+    if (e.target && e.target.classList && e.target.classList.contains("art")) return; // arrows move the painting itself
     if (e.key === "ArrowRight") { e.preventDefault(); stepScale(1); }
     if (e.key === "ArrowLeft") { e.preventDefault(); stepScale(-1); }
   });
@@ -943,7 +958,7 @@ dialog.scale { border-radius: 14px; }
     var cta = $("#sc-cta"); cta.textContent = ctaText(w); cta.href = S.telegram || "#";
     $$(".mode[data-mode]").forEach(function (b) { b.onclick = function () { MODE = b.dataset.mode; drawScale(); }; });
     var size = $("#sc-size");
-    size.oninput = function () { WALL.size = +size.value; var a = $("#room .art"); if (a) a.style.width = WALL.size + "%"; applyLight(); };
+    size.oninput = function () { WALL.size = +size.value; var a = $("#room .art"); if (a) a.style.width = WALL.size + "%"; applyLight(); wallArrows($("#room")); };
     var swap = $("#sc-swap input"); swap.onchange = function () { pickWall(swap); };
     ["ry", "rx", "rz"].forEach(function (k) {
       var el = $("#sc-" + k);
@@ -1037,6 +1052,7 @@ dialog.scale { border-radius: 14px; }
     var art = artBox(w, d, "left:" + WALL.x + "%;top:" + WALL.y + "%;width:" + WALL.size + "%;aspect-ratio:" + d.W + " / " + d.H + ";");
     art.tabIndex = 0; art.setAttribute("role", "slider"); art.setAttribute("aria-label", "Положение картины, двигайте стрелками");
     room.appendChild(art);
+    wallArrows(room);
     $("#sc-size").value = WALL.size;
     art.style.transform = artTransform();
     art.appendChild(h("div", "tint")); art.appendChild(h("div", "shade")); art.appendChild(h("div", "glare"));
@@ -1063,7 +1079,7 @@ dialog.scale { border-radius: 14px; }
       if (!drag) return;
       WALL.x = Math.min(100, Math.max(0, drag.x + (e.clientX - drag.px) / drag.r.width * 100));
       WALL.y = Math.min(100, Math.max(0, drag.y + (e.clientY - drag.py) / drag.r.height * 100));
-      art.style.left = WALL.x + "%"; art.style.top = WALL.y + "%";
+      art.style.left = WALL.x + "%"; art.style.top = WALL.y + "%"; wallArrows(room);
       if (WALL.auto) { autoPerspective(); art.style.transform = artTransform(); }
     });
     art.addEventListener("pointerup", function () { drag = null; applyLight(); });
@@ -1072,7 +1088,7 @@ dialog.scale { border-radius: 14px; }
       var k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
       if (!k) return; e.preventDefault();
       WALL.x = Math.min(100, Math.max(0, WALL.x + k[0])); WALL.y = Math.min(100, Math.max(0, WALL.y + k[1]));
-      art.style.left = WALL.x + "%"; art.style.top = WALL.y + "%";
+      art.style.left = WALL.x + "%"; art.style.top = WALL.y + "%"; wallArrows(room);
       if (WALL.auto) { autoPerspective(); art.style.transform = artTransform(); } applyLight();
     });
   }
