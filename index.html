@@ -117,7 +117,7 @@ nav a:hover { color: var(--ink); }
 .arc .ph.arch { border-radius: 50% 50% var(--r) var(--r) / 40% 40% var(--r) var(--r); }
 .arc .ph.round { border-radius: 50%; aspect-ratio: 1 / 1; }
 .arc img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.2,1); }
-.arc .ph:hover img { transform: scale(1.04); }
+
 .arc h4 { margin: 4px 0 0; font-family: var(--f-display); font-weight: 300; font-size: 22px; line-height: 1.1; }
 .arc .spec { font-size: 12px; color: var(--muted); }
 .arc .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
@@ -619,6 +619,7 @@ dialog.scale { border-radius: 14px; }
     if (w.img) img.src = w.img;
     if (w.pos) img.style.objectPosition = w.pos;
     ph.appendChild(img);
+    hoverZoom(ph, ph, i);
     ph.addEventListener("click", function () { MODE = "room"; TRY = false; openScale(i); });
     ph.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openScale(i); } });
     var cap = h("figcaption");
