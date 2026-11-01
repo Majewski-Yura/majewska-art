@@ -579,7 +579,7 @@ dialog.scale { border-radius: 14px; }
   function shapeOf(w) { return w.shape || (w.arch ? "arch" : "rect"); }
   function sizeText(w) { return shapeOf(w) === "round" ? "Ø " + w.w + " см" : w.w + " × " + w.h + " см"; }
   function stateText(w) { return w.status === "archive" ? "Архив · повтор" : "В наличии"; }
-  function ctaText(w) { return w.status === "archive" ? "Заказать повтор" : "Хочу эту картину"; }
+  function ctaText(w) { return w.status === "archive" ? "Заказать повтор" : "Купить эту картину"; }
 
   // No hanging words: short words stick to the next one, a dash sticks to the word before it,
   // and the last word of a paragraph stays with the one before it (all via no-break spaces).
