@@ -202,12 +202,17 @@ dialog.scale[open] { animation: dlgIn .5s cubic-bezier(.2,.7,.2,1); }
 .room .person .fig { width: 100%; height: 100%; background: color-mix(in srgb, var(--muted) 60%, var(--soft)); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
 .room .person svg .sil { fill: color-mix(in srgb, var(--muted) 55%, var(--soft)); }
 .room .person svg .hair { fill: color-mix(in srgb, var(--ink) 55%, var(--soft)); }
-.room .sw { position: absolute; z-index: 3; width: 44px; height: 44px; transform: translateY(-50%); border: 0; border-radius: 50%;
-  background: color-mix(in srgb, var(--bg) 88%, transparent); color: var(--ink); font: 300 26px/1 var(--f-display); cursor: pointer;
-  box-shadow: 0 8px 20px -10px rgba(0,0,0,.4); backdrop-filter: blur(6px); transition: background .25s, color .25s, transform .25s; }
-.room .sw:hover { background: var(--ink); color: var(--bg); }
-.room .sw-prev:hover { transform: translate(-3px, -50%); }
-.room .sw-next:hover { transform: translate(3px, -50%); }
+/* bare arrows beside the painting, with a small tooltip on hover */
+.room .sw { position: absolute; z-index: 3; width: 44px; height: 56px; transform: translateY(-50%); border: 0; padding: 0; background: none;
+  color: var(--ink); font: 300 52px/1 var(--f-display); cursor: pointer; text-shadow: 0 1px 8px rgba(255,255,255,.7); transition: transform .25s, color .25s; }
+.room .sw:hover { color: var(--gold); }
+.room .sw-prev:hover { transform: translate(-4px, -50%); }
+.room .sw-next:hover { transform: translate(4px, -50%); }
+.room .sw::after { content: attr(data-tip); position: absolute; top: 100%; left: 50%; transform: translate(-50%, 4px); white-space: nowrap;
+  font: 400 11px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); text-shadow: none;
+  background: color-mix(in srgb, var(--bg) 92%, transparent); padding: 7px 10px; border-radius: 999px; box-shadow: 0 6px 16px -8px rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+.room .sw:hover::after, .room .sw:focus-visible::after { opacity: 1; transform: translate(-50%, 8px); }
 .room .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .room .art { box-shadow: 0 10px 22px -10px rgba(0,0,0,.45), 0 2px 4px rgba(0,0,0,.12); }
 .room .tag { font-size: 11px; color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
@@ -935,7 +940,7 @@ dialog.scale { border-radius: 14px; }
     $$(".sw", room).forEach(function (b) { b.remove(); });
     var half = WALL.size / 2;
     [["prev", "‹", "Предыдущая картина", "calc(" + (WALL.x - half).toFixed(2) + "% - 64px)"], ["next", "›", "Следующая картина", "calc(" + (WALL.x + half).toFixed(2) + "% + 20px)"]].forEach(function (a) {
-      var b = h("button", "sw sw-" + a[0], a[1]); b.type = "button"; b.setAttribute("aria-label", a[2]); b.title = a[2];
+      var b = h("button", "sw sw-" + a[0], a[1]); b.type = "button"; b.setAttribute("aria-label", a[2]); b.dataset.tip = a[2];
       b.style.left = a[3]; b.style.top = WALL.y + "%";
       b.onclick = function () { stepScale(a[0] === "next" ? 1 : -1); };
       room.appendChild(b);
@@ -1025,8 +1030,8 @@ dialog.scale { border-radius: 14px; }
     // arrows on either side of the painting switch to the previous / next painting right here
     if (S.works.length > 1) {
       var midY = (top + hpx / 2) / PH * 100;
-      [["prev", "‹", "Предыдущая картина", (CX - wpx / 2) / PW * 100, "calc(%X% - 64px)"], ["next", "›", "Следующая картина", (CX + wpx / 2) / PW * 100, "calc(%X% + 20px)"]].forEach(function (a) {
-        var b = h("button", "sw sw-" + a[0], a[1]); b.type = "button"; b.setAttribute("aria-label", a[2]); b.title = a[2];
+      [["prev", "‹", "Предыдущая картина", (CX - wpx / 2) / PW * 100, "calc(%X% - 60px)"], ["next", "›", "Следующая картина", (CX + wpx / 2) / PW * 100, "calc(%X% + 16px)"]].forEach(function (a) {
+        var b = h("button", "sw sw-" + a[0], a[1]); b.type = "button"; b.setAttribute("aria-label", a[2]); b.dataset.tip = a[2];
         b.style.left = a[4].replace("%X%", a[3].toFixed(2) + "%"); b.style.top = midY + "%";
         b.onclick = function () { stepScale(a[0] === "next" ? 1 : -1); };
         room.appendChild(b);
