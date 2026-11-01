@@ -86,6 +86,10 @@ nav a:hover { color: var(--ink); }
 .work .ph { overflow: visible; background: none; aspect-ratio: 4 / 5; display: grid; place-items: end center; margin-bottom: 44px; }
 .work .pic { overflow: hidden; max-width: 100%; box-shadow: 0 22px 34px -20px rgba(43,38,34,.55); transition: transform .9s cubic-bezier(.2,.7,.2,1); }
 .work .ph:hover .pic { transform: translateY(-4px); }
+.zoom-bg { position: fixed; inset: 0; z-index: 70; background: color-mix(in srgb, var(--bg) 92%, transparent); opacity: 0; transition: opacity .6s ease; }
+.zoom-bg.on { opacity: 1; }
+.pic.zoom { position: fixed; z-index: 71; margin: 0; max-width: none; transform-origin: center; cursor: zoom-in; transition: transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s; box-shadow: 0 40px 80px -30px rgba(43,38,34,.55); }
+.pic.zoom img { width: 100%; height: 100%; object-fit: cover; }
 .work img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .work .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 24px; align-items: baseline; }
 .work h3 { font-size: 30px; }
@@ -636,6 +640,41 @@ dialog.scale { border-radius: 14px; }
     return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg>';
   }
 
+  // Hovering a painting in the catalog (mouse only) smoothly blows it up to nearly the whole screen;
+  // moving the mouse off it, scrolling or Esc puts it back, a click opens the scale view.
+  var CAN_HOVER = window.matchMedia("(hover: hover) and (pointer: fine)").matches, ZOOM = null;
+  function hoverZoom(ph, pic, i) {
+    if (!CAN_HOVER) return;
+    var t = null;
+    ph.addEventListener("mouseenter", function () { if (!editing && !ZOOM) t = setTimeout(function () { zoomIn(pic, i); }, 350); });
+    ph.addEventListener("mouseleave", function () { clearTimeout(t); });
+  }
+  function zoomIn(pic, i) {
+    var r = pic.getBoundingClientRect(); if (!r.width) return;
+    var bg = h("div", "zoom-bg"), cl = pic.cloneNode(true);
+    cl.className = "pic zoom";
+    cl.setAttribute("style", pic.getAttribute("style") + ";left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px");
+    document.body.appendChild(bg); document.body.appendChild(cl);
+    var s = Math.min(window.innerWidth * 0.9 / r.width, window.innerHeight * 0.88 / r.height);
+    var dx = window.innerWidth / 2 - (r.left + r.width / 2), dy = window.innerHeight / 2 - (r.top + r.height / 2);
+    pic.style.visibility = "hidden";
+    ZOOM = { pic: pic, cl: cl, bg: bg };
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      bg.classList.add("on"); cl.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+    }); });
+    cl.addEventListener("mouseleave", zoomOut);
+    bg.addEventListener("click", zoomOut);
+    cl.addEventListener("click", function () { zoomOut(true); MODE = "room"; TRY = false; openScale(i); });
+  }
+  function zoomOut(instant) {
+    var z = ZOOM; if (!z) return; ZOOM = null;
+    z.bg.classList.remove("on"); z.cl.style.transform = "";
+    var done = function () { z.cl.remove(); z.bg.remove(); z.pic.style.visibility = ""; };
+    if (instant === true || reduce) done(); else setTimeout(done, 620);
+  }
+  window.addEventListener("scroll", function () { if (ZOOM) zoomOut(true); }, { passive: true });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") zoomOut(); });
+
   function render() {
     root.textContent = "";
     root.appendChild(tpl.content.cloneNode(true));
@@ -695,6 +734,7 @@ dialog.scale { border-radius: 14px; }
       if (w.img) img.src = w.img;
       if (w.pos) img.style.objectPosition = w.pos;
       pic.appendChild(img); ph.appendChild(pic);
+      hoverZoom(ph, pic, i);
       var cap = h("figcaption", "cap");
       cap.appendChild(h("h3", "", w.title));
       cap.appendChild(h("span", "price", price(w.price)));
