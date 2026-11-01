@@ -1,0 +1,5 @@
+# only the site itself goes to GitHub
+*
+!index.html
+!README.md
+!.gitignore
