@@ -85,10 +85,10 @@ nav a:hover { color: var(--ink); }
 /* paintings stand on the bottom edge of their slot, so every caption sits the same distance below its painting */
 .work .ph { overflow: visible; background: none; aspect-ratio: 4 / 5; display: grid; place-items: end center; margin-bottom: 44px; }
 .work .pic { overflow: hidden; max-width: 100%; box-shadow: 0 22px 34px -20px rgba(43,38,34,.55); transition: transform .9s cubic-bezier(.2,.7,.2,1); }
-.work .ph:hover .pic { transform: translateY(-4px); }
 .zoom-bg { position: fixed; inset: 0; z-index: 70; background: color-mix(in srgb, var(--bg) 92%, transparent); opacity: 0; transition: opacity .6s ease; }
 .zoom-bg.on { opacity: 1; }
-.pic.zoom { position: fixed; z-index: 71; margin: 0; max-width: none; overflow: hidden; transform-origin: center; cursor: default; transition: transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s; box-shadow: 0 40px 80px -30px rgba(43,38,34,.55); }
+.pic.zoom { position: fixed; z-index: 71; margin: 0; max-width: none; overflow: hidden; transform-origin: center; cursor: default; transition: transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s, border-radius .6s; box-shadow: 0 40px 80px -30px rgba(43,38,34,.55); }
+.pic.zoom.back { box-shadow: 0 22px 34px -20px rgba(43,38,34,.55); }
 .pic.zoom img { width: 100%; height: 100%; object-fit: cover; }
 .zoom-btn { position: fixed; left: 50%; z-index: 72; transform: translate(-50%, -100%) translateY(8px); opacity: 0; transition: opacity .4s ease .25s, transform .4s ease .25s;
   border: 0; border-radius: 999px; padding: 13px 22px; background: color-mix(in srgb, var(--bg) 92%, transparent); color: var(--ink);
@@ -669,7 +669,7 @@ dialog.scale { border-radius: 14px; }
     var btn = h("button", "zoom-btn", "Показать в масштабе к мебели"); btn.type = "button";
     btn.style.top = (window.innerHeight / 2 + r.height * s / 2 - 28) + "px";
     document.body.appendChild(btn);
-    ZOOM = { pic: pic, cl: cl, bg: bg, btn: btn };
+    ZOOM = { pic: pic, cl: cl, bg: bg, btn: btn, r: r, radius: pic.style.borderRadius || "8px" };
     requestAnimationFrame(function () { requestAnimationFrame(function () {
       bg.classList.add("on"); btn.classList.add("on"); cl.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
     }); });
@@ -681,9 +681,20 @@ dialog.scale { border-radius: 14px; }
   }
   function zoomOut(instant) {
     var z = ZOOM; if (!z) return; ZOOM = null;
-    z.bg.classList.remove("on"); z.btn.classList.remove("on"); z.cl.style.transform = "";
-    var done = function () { z.cl.remove(); z.bg.remove(); z.btn.remove(); z.pic.style.visibility = ""; };
-    if (instant === true || reduce) done(); else setTimeout(done, 620);
+    z.bg.classList.remove("on"); z.btn.classList.remove("on");
+    // fly back to where the painting is now (the page may have shifted), with its own corners and shadow
+    var n = z.pic.getBoundingClientRect(), r = z.r;
+    z.cl.classList.add("back");
+    z.cl.style.borderRadius = z.radius;
+    z.cl.style.transform = "translate(" + (n.left - r.left) + "px," + (n.top - r.top) + "px) scale(" + (n.width / r.width) + "," + (n.height / r.height) + ")";
+    var finished = false;
+    var done = function () {
+      if (finished) return; finished = true;
+      z.pic.style.visibility = "";
+      requestAnimationFrame(function () { z.cl.remove(); z.bg.remove(); z.btn.remove(); });
+    };
+    if (instant === true || reduce) done();
+    else { z.cl.addEventListener("transitionend", function (e) { if (e.propertyName === "transform") done(); }); setTimeout(done, 800); }
   }
   window.addEventListener("scroll", function () { if (ZOOM) zoomOut(true); }, { passive: true });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") zoomOut(); });
