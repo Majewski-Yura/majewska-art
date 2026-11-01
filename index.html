@@ -82,8 +82,10 @@ nav a:hover { color: var(--ink); }
 .works { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(64px, 9vw, 140px) clamp(32px, 7vw, 120px); }
 .work { margin: 0; display: flex; flex-direction: column; gap: 22px; }
 .work:nth-child(even) { margin-top: clamp(0px, 12vw, 180px); }
-.work .ph { overflow: hidden; background: var(--soft); }
-.work img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+.work .ph { overflow: hidden; background: var(--soft); aspect-ratio: 4 / 5; display: grid; place-items: center; }
+.work .pic { overflow: hidden; max-width: 100%; box-shadow: 0 22px 34px -20px rgba(43,38,34,.55); transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+.work .ph:hover .pic { transform: translateY(-4px); }
+.work img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .work .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 24px; align-items: baseline; }
 .work h3 { font-size: 30px; }
 .work .price { font-variant-numeric: tabular-nums; font-size: 15px; }
@@ -172,11 +174,7 @@ footer.site .brand { font-size: 24px; color: var(--ink); }
 }
 .work .ph:hover::after, .work .ph:focus-visible::after { opacity: 1; transform: none; }
 /* canvas shape follows the painting: arched top or a full circle */
-.work .ph.arch { border-radius: 50% 50% var(--r) var(--r) / 40% 40% var(--r) var(--r); }
-.work .ph.round { border-radius: 50%; }
-.work .ph.round img { aspect-ratio: 1 / 1; }
-.work .ph.round::after { left: 50%; bottom: 14%; transform: translate(-50%, 6px); }
-.work .ph.round:hover::after, .work .ph.round:focus-visible::after { transform: translate(-50%, 0); }
+
 dialog.scale { border: 0; padding: 0; width: min(1120px, calc(100% - 32px)); max-height: calc(100% - 32px); background: var(--bg); color: var(--ink); }
 dialog.scale::backdrop { background: rgba(25,23,21,.45); backdrop-filter: blur(4px); }
 dialog.scale[open] { animation: dlgIn .5s cubic-bezier(.2,.7,.2,1); }
@@ -682,17 +680,17 @@ dialog.scale { border-radius: 14px; }
     (S.works || []).forEach(function (w, i) {
       if (w.status === "archive") { strip.appendChild(archiveCard(w, i)); archived++; return; }
       var f = h("figure", "work");
-      var ph = h("div", "ph par " + shapeOf(w));
-      if (w.radius !== undefined && w.radius !== "" && shapeOf(w) !== "round") {
-        var cc = corner(w, num(w.w) || 4, num(w.h) || 5, 5 / 4);
-        ph.style.borderRadius = shapeOf(w) === "arch" ? "50% 50% " + cc.x + " " + cc.x + " / 40% 40% " + cc.y + " " + cc.y : cc.x + " / " + cc.y;
-      }
+      // the card is a 4:5 piece of wall; the painting hangs on it at its own proportions, so it is never cut to fit
+      var ph = h("div", "ph"), fr = frameOf(w), pic = h("div", "pic");
+      pic.style.aspectRatio = fr.ratio;
+      pic.style.width = (fr.k > 0.8 ? 82 : 82 * fr.k / 0.8).toFixed(2) + "%";
+      if (fr.radius) pic.style.borderRadius = fr.radius;
       ph.tabIndex = 0; ph.setAttribute("role", "button");
       ph.setAttribute("aria-label", "Посмотреть «" + (w.title || "") + "» в масштабе рядом с диваном");
       var img = h("img"); img.alt = w.title || ""; img.loading = "lazy";
       if (w.img) img.src = w.img;
       if (w.pos) img.style.objectPosition = w.pos;
-      ph.appendChild(img);
+      pic.appendChild(img); ph.appendChild(pic);
       var cap = h("figcaption", "cap");
       cap.appendChild(h("h3", "", w.title));
       cap.appendChild(h("span", "price", price(w.price)));
@@ -1013,7 +1011,7 @@ dialog.scale { border-radius: 14px; }
     function add(sel, cls) { $$(sel, root).forEach(function (el) { el.classList.add("fx"); if (cls) el.classList.add(cls); targets.push(el); }); }
     add("[data-split]");
     add(".head p, .head .label, .work .cap, .work .acts, .note, .arc-head, .arc-strip, .commission .label, .commission .intro, .steps li, .commission .link, .about .label, .about .body, .sign, .details > div, .details figcaption, .reviews > figure, #reviews .label, .contact p, .contact .links, footer.site");
-    add(".work .par, .commission .par, .about .par, .details .par", "curtain");
+    add(".work .ph, .commission .par, .about .par, .details .par", "curtain");
     $$("[data-split]", root).forEach(function (el) { $$(".w > span", el).forEach(function (s, i) { s.style.transitionDelay = (i * .06) + "s"; }); });
     $$(".steps li, .reviews > figure, .details > div", root).forEach(function (el) {
       el.style.transitionDelay = (Array.prototype.indexOf.call(el.parentNode.children, el) * .12) + "s";
