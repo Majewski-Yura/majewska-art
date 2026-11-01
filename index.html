@@ -88,8 +88,13 @@ nav a:hover { color: var(--ink); }
 .work .ph:hover .pic { transform: translateY(-4px); }
 .zoom-bg { position: fixed; inset: 0; z-index: 70; background: color-mix(in srgb, var(--bg) 92%, transparent); opacity: 0; transition: opacity .6s ease; }
 .zoom-bg.on { opacity: 1; }
-.pic.zoom { position: fixed; z-index: 71; margin: 0; max-width: none; overflow: hidden; transform-origin: center; cursor: zoom-in; transition: transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s; box-shadow: 0 40px 80px -30px rgba(43,38,34,.55); }
+.pic.zoom { position: fixed; z-index: 71; margin: 0; max-width: none; overflow: hidden; transform-origin: center; cursor: default; transition: transform .6s cubic-bezier(.2,.7,.2,1), box-shadow .6s; box-shadow: 0 40px 80px -30px rgba(43,38,34,.55); }
 .pic.zoom img { width: 100%; height: 100%; object-fit: cover; }
+.zoom-btn { position: fixed; left: 50%; z-index: 72; transform: translate(-50%, -100%) translateY(8px); opacity: 0; transition: opacity .4s ease .25s, transform .4s ease .25s;
+  border: 0; border-radius: 999px; padding: 13px 22px; background: color-mix(in srgb, var(--bg) 92%, transparent); color: var(--ink);
+  font: 400 12px var(--f-body); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 30px -12px rgba(0,0,0,.4); backdrop-filter: blur(6px); }
+.zoom-btn.on { opacity: 1; transform: translate(-50%, -100%); }
+.zoom-btn:hover { background: var(--ink); color: var(--bg); }
 .work img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .work .cap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 24px; align-items: baseline; }
 .work h3 { font-size: 30px; }
@@ -660,18 +665,24 @@ dialog.scale { border-radius: 14px; }
     // a plain soft corner stays small on the big picture (about 12px on screen); arches, circles and set radii scale with it
     if (/^8px/.test(pic.style.borderRadius || "8px")) cl.style.borderRadius = (12 / s).toFixed(2) + "px";
     pic.style.visibility = "hidden";
-    ZOOM = { pic: pic, cl: cl, bg: bg };
+    // the button sits on the lower edge of the enlarged painting
+    var btn = h("button", "zoom-btn", "Показать в масштабе к мебели"); btn.type = "button";
+    btn.style.top = (window.innerHeight / 2 + r.height * s / 2 - 28) + "px";
+    document.body.appendChild(btn);
+    ZOOM = { pic: pic, cl: cl, bg: bg, btn: btn };
     requestAnimationFrame(function () { requestAnimationFrame(function () {
-      bg.classList.add("on"); cl.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
+      bg.classList.add("on"); btn.classList.add("on"); cl.style.transform = "translate(" + dx + "px," + dy + "px) scale(" + s + ")";
     }); });
-    cl.addEventListener("mouseleave", zoomOut);
+    // leaving the painting closes it, unless the mouse goes onto its button (and back)
+    cl.addEventListener("mouseleave", function (e) { if (e.relatedTarget !== btn) zoomOut(); });
+    btn.addEventListener("mouseleave", function (e) { if (e.relatedTarget !== cl) zoomOut(); });
     bg.addEventListener("click", zoomOut);
-    cl.addEventListener("click", function () { zoomOut(true); MODE = "room"; TRY = false; openScale(i); });
+    btn.addEventListener("click", function () { zoomOut(true); MODE = "room"; TRY = false; openScale(i); });
   }
   function zoomOut(instant) {
     var z = ZOOM; if (!z) return; ZOOM = null;
-    z.bg.classList.remove("on"); z.cl.style.transform = "";
-    var done = function () { z.cl.remove(); z.bg.remove(); z.pic.style.visibility = ""; };
+    z.bg.classList.remove("on"); z.btn.classList.remove("on"); z.cl.style.transform = "";
+    var done = function () { z.cl.remove(); z.bg.remove(); z.btn.remove(); z.pic.style.visibility = ""; };
     if (instant === true || reduce) done(); else setTimeout(done, 620);
   }
   window.addEventListener("scroll", function () { if (ZOOM) zoomOut(true); }, { passive: true });
